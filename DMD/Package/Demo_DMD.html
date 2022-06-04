@@ -1,0 +1,338 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>DMD_Demo</title><meta name="generator" content="MATLAB 9.4"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2021-07-04"><meta name="DC.source" content="DMD_Demo.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#2">PREPARING DATA</a></li><li><a href="#3">PERFORM DMD</a></li><li><a href="#4">RESULTS</a></li></ul></div><pre class="codeinput">clear,clc,close <span class="string">all</span>
+</pre><h2 id="2">PREPARING DATA</h2><p>WE CREATE A TIME SERIES DATA CONSISTING OF TWO MAIN COMPONENTS</p><pre class="codeinput">[X,Y] = meshgrid(0:0.01:1,0:0.01:1);
+Xf = reshape(X,[],1);Yf = reshape(Y,[],1);
+T = 0:pi/100:4*pi;
+w1 = 5;w2 = 25;
+<span class="comment">% We create signals tailored at predetermined frequency</span>
+
+f1 = 10*(exp(-((Xf-0.5).^2 + (Yf-0.5).^2)./(2*(0.15 + 0.1*sin(w1*T)).^2)));
+f2 = 5*sin(10*Xf - w2*T);
+f3 = 0.01*rand(size(f1));
+
+f = f1+f2+f3;
+
+figure(<span class="string">'units'</span>,<span class="string">'normalized'</span>,<span class="string">'outerposition'</span>,[0 0 1 1])
+filename1 = <span class="string">"Inputs.gif"</span>
+limits = [-10,10];
+<span class="keyword">for</span> i = 1:round(length(T)/5)
+	subplot(1,3,1)
+    imagesc(reshape(f1(:,5*i),101,101))
+	title(<span class="string">'Component 1: Gaussian'</span>)
+	text(0.5,0.5,num2str(5*i))
+	caxis(limits)
+	colorbar
+	axis <span class="string">equal</span> <span class="string">off</span>
+
+	subplot(1,3,2)
+	imagesc(reshape(f2(:,5*i),101,101))
+	title(<span class="string">'Component 2: Sine Wave'</span>)
+	caxis(limits)
+	colorbar
+	text(0.5,0.5,num2str(5*i))
+	axis <span class="string">equal</span> <span class="string">off</span>
+
+	subplot(1,3,3)
+	imagesc(reshape(f(:,5*i),101,101))
+	title(<span class="string">'Final Input Data'</span>)
+	caxis(limits)
+	colorbar
+	text(0.5,0.5,num2str(5*i))
+	axis <span class="string">equal</span> <span class="string">off</span>
+    drawnow
+
+	frame = getframe(1);
+    im{i} = frame2im(frame);
+
+	[A,map] = rgb2ind(im{i},256);
+    <span class="keyword">if</span> i == 1
+        imwrite(A,map,<span class="string">'Inputs.gif'</span>,<span class="string">'gif'</span>,<span class="string">'LoopCount'</span>,Inf,<span class="string">'DelayTime'</span>,1);
+    <span class="keyword">else</span>
+        imwrite(A,map,<span class="string">'Inputs.gif'</span>,<span class="string">'gif'</span>,<span class="string">'WriteMode'</span>,<span class="string">'append'</span>,<span class="string">'DelayTime'</span>,1);
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+</pre><img vspace="5" hspace="5" src="img/Inputs.gif" width = "1080" height = "auto" alt=""> <h2 id="3">PERFORM DMD</h2><p>DYNAMIC MODE DECOMPOSITION</p><pre class="codeinput"><span class="comment">%	DMD</span>
+X1 = f(:,1:end-1);
+X2 = f(:,2:end);
+[U,S,V] = svd(X1,<span class="string">'econ'</span>);
+
+r = 10;
+U = U(:,1:r);
+S = S(1:r,1:r);
+V = V(:,1:r);
+
+figure(2)
+semilogy(100*diag(S)/sum(diag(S)))
+title(<span class="string">"Weights associated with the Vectors - U"</span>)
+saveas(gcf,<span class="string">'Weights.png'</span>)
+
+Atilde = U'*X2*V*inv(S);
+[W,eigs] = eig(Atilde);
+Phi = X2*V*inv(S)*W;
+</pre><img vspace="5" hspace="5" src="img/DMD_Demo_02.png" width = "720" height = "auto" alt=""> <h2 id="4">RESULTS</h2><p>WE VERIFY IF THE MAIN COMPONENTS HAVE BEEN SEPARATED AND IF RECONSTRUCTED DATA IS ACCURATE</p><pre class="codeinput">figure(3)
+<span class="keyword">for</span> i = 1:r
+	subplot(2,5,i)
+	imagesc(reshape(real(Phi(:,i)),101,101))
+	title([<span class="string">'Mode:'</span>,num2str(i)])
+	axis <span class="string">equal</span> <span class="string">off</span>
+<span class="keyword">end</span>
+saveas(gcf,<span class="string">'Natural Modes.png'</span>)
+
+lambda = diag(eigs);
+omega = log(lambda)/(T(2)-T(1));
+x1 = X1(:,1);
+b = Phi\x1;
+
+mm1 = size(X1,2);
+t_d = zeros(r,mm1);
+
+<span class="keyword">for</span> i = 1:mm1
+	t_d(:,i) = b.*exp(omega*T(i));
+<span class="keyword">end</span>
+f_dmd = [x1,Phi*t_d];
+
+figure(<span class="string">'units'</span>,<span class="string">'normalized'</span>,<span class="string">'outerposition'</span>,[0 0 1 1])
+filename2 = <span class="string">'Comparison.gif'</span>
+<span class="keyword">for</span> i = 1:round(length(T)/2)-1
+
+	subplot(1,2,1)
+	imagesc(reshape(real(f_dmd(:,2*i)),101,101))
+	text(0.5,0.5,num2str(2*i))
+	caxis([-10,10])
+	title(<span class="string">"DMD - Reconstruction"</span>)
+	colorbar
+	axis <span class="string">equal</span> <span class="string">off</span>
+
+
+	subplot(1,2,2)
+	imagesc(reshape(f(:,2*i),101,101))
+	caxis([-10,10])
+	title(<span class="string">"Actual Input"</span>)
+	colorbar
+	text(0.5,0.5,num2str(2*i))
+	axis <span class="string">equal</span> <span class="string">off</span>
+
+	drawnow
+
+	frame = getframe(gcf);
+    im{i} = frame2im(frame);
+
+	[A,map] = rgb2ind(im{i},256);
+    <span class="keyword">if</span> i == 1
+        imwrite(A,map,filename2,<span class="string">'gif'</span>,<span class="string">'LoopCount'</span>,Inf,<span class="string">'DelayTime'</span>,1);
+    <span class="keyword">else</span>
+        imwrite(A,map,filename2,<span class="string">'gif'</span>,<span class="string">'WriteMode'</span>,<span class="string">'append'</span>,<span class="string">'DelayTime'</span>,1);
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+</pre><img vspace="5" hspace="5" src="img/DMD_Demo_03.png" width = "1080" height = "auto" alt=""> <img vspace="5" hspace="5" src="img/Comparison.gif" width = "1080" height = "auto" alt=""> <p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2018a</a><br></p></div><!--
+##### SOURCE BEGIN #####
+clear,clc,close all
+%% PREPARING DATA
+% WE CREATE A TIME SERIES DATA CONSISTING OF TWO MAIN COMPONENTS
+
+
+[X,Y] = meshgrid(0:0.01:1,0:0.01:1);
+T = 0:pi/100:4*pi;
+w1 = 5;w2 = 25;
+% We create signals tailored at predetermined frequency
+Xf = reshape(X,[],1);Yf = reshape(Y,[],1);
+f1 = 10*(exp(-((Xf-0.5).^2 + (Yf-0.5).^2)./(2*(0.15 + 0.1*sin(w1*T)).^2)));
+%f1 = 10*(exp(-((Xf-0.5).^2 + (Yf-0.5).^2)./(2*(0.05).^2)));
+f2 = 5*sin(10*Xf - w2*T);
+f3 = 0.01*rand(size(f1));
+
+f = f1+f2+f3;
+
+%
+figure('units','normalized','outerposition',[0 0 1 1])
+filename1 = "Inputs.gif"
+limits = [-10,10];
+for i = 1:round(length(T)/5)
+	subplot(1,3,1)
+    imagesc(reshape(f1(:,5*i),101,101))
+	title('Component 1: Gaussian')
+	text(0.5,0.5,num2str(5*i))
+	caxis(limits)
+	colorbar
+	axis equal off
+	
+	subplot(1,3,2)
+	imagesc(reshape(f2(:,5*i),101,101))
+	title('Component 2: Sine Wave')
+	caxis(limits)
+	colorbar
+	text(0.5,0.5,num2str(5*i))
+	axis equal off
+
+	subplot(1,3,3)
+	imagesc(reshape(f(:,5*i),101,101))
+	title('Final Input Data')
+	caxis(limits)
+	colorbar
+	text(0.5,0.5,num2str(5*i))
+	axis equal off
+    drawnow
+	
+	frame = getframe(1);
+    im{i} = frame2im(frame);
+	
+	[A,map] = rgb2ind(im{i},256);
+    if i == 1
+        imwrite(A,map,'Inputs.gif','gif','LoopCount',Inf,'DelayTime',1);
+    else
+        imwrite(A,map,'Inputs.gif','gif','WriteMode','append','DelayTime',1);
+    end
+end
+%}
+%% PERFORM DMD
+% DYNAMIC MODE DECOMPOSITION
+
+
+%	DMD
+X1 = f(:,1:end-1);
+X2 = f(:,2:end);
+[U,S,V] = svd(X1,'econ');
+
+r = 10;
+U = U(:,1:r);
+S = S(1:r,1:r);
+V = V(:,1:r);
+
+figure(2)
+semilogy(100*diag(S)/sum(diag(S)))
+title("Weights associated with the Vectors - U")
+saveas(gcf,'Weights.png')
+Atilde = U'*X2*V*inv(S);
+[W,eigs] = eig(Atilde);
+Phi = X2*V*inv(S)*W;
+
+
+%% RESULTS
+% WE VERIFY IF THE MAIN COMPONENTS HAVE BEEN SEPARATED AND IF RECONSTRUCTED
+% DATA IS ACCURATE
+
+figure(3)
+for i = 1:r
+	subplot(2,5,i)
+	imagesc(reshape(real(Phi(:,i)),101,101))
+	title(['Mode:',num2str(i)])
+	axis equal off
+end
+saveas(gcf,'Natural Modes.png')
+
+lambda = diag(eigs);
+omega = log(lambda)/(T(2)-T(1));
+x1 = X1(:,1);
+b = Phi\x1;
+
+mm1 = size(X1,2);
+t_d = zeros(r,mm1);
+
+for i = 1:mm1
+	t_d(:,i) = b.*exp(omega*T(i));
+end
+f_dmd = [x1,Phi*t_d];
+
+figure('units','normalized','outerposition',[0 0 1 1])
+filename2 = 'Comparison.gif'
+for i = 1:round(length(T)/2)-1
+	
+	subplot(1,2,1)
+	imagesc(reshape(real(f_dmd(:,2*i)),101,101))
+	text(0.5,0.5,num2str(2*i))
+	caxis([-10,10])
+	title("DMD - Reconstruction")
+	colorbar
+	axis equal off
+	
+	
+	subplot(1,2,2)
+	imagesc(reshape(f(:,2*i),101,101))
+	caxis([-10,10])
+	title("Actual Input")
+	colorbar
+	text(0.5,0.5,num2str(2*i))
+	axis equal off
+	
+	drawnow
+	
+	frame = getframe(gcf);
+    im{i} = frame2im(frame);
+	
+	[A,map] = rgb2ind(im{i},256);
+    if i == 1
+        imwrite(A,map,filename2,'gif','LoopCount',Inf,'DelayTime',1);
+    else
+        imwrite(A,map,filename2,'gif','WriteMode','append','DelayTime',1);
+    end
+end
+%%
+##### SOURCE END #####
+--></body></html>
